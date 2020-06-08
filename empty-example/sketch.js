@@ -42,16 +42,18 @@ class Ball {
     return null;
   }
 
-  zeroTCollisionCheck(o) {
+  collisionCheck(o, t) {
     const v = p5.Vector.sub(this.v, o.v);
     const p = p5.Vector.sub(this.p, o.p);
 
-    //ddtDSq/2 with t = 0
-    const a = 2 * v.dot(p);
+    //ddtDSq
+    const a = 2 * t * v.magSq() + 2 * v.dot(p);
+
+    //if distance derivative is less than 0 balls are moving into eachother
     return a < 0;
   }
 
-  zeroTBoundaryCollisionCheck(b) {
+  boundaryCollisionCheck(b) {
     if (b === "LEFT") return this.v.x < 0;
     else if (b === "RIGHT") return this.v.x > 0;
     else if (b === "TOP") return this.v.y < 0;
@@ -77,27 +79,36 @@ function setup() {
   createCanvas(WIDTH, HEIGHT);
 
   // balls.push(new Ball(createVector(300, 500), createVector(+80, 0), 20, "blue"));
-  // balls.push(new Ball(createVector(500, 500), createVector(0, 0), 10, "red"));
+  // balls.push(new Ball(createVector(500, 500), createVector(0, 0), 20, "red"));
   // balls.push(new Ball(createVector(500, 500), createVector(0, 0), 10, "red"));
   // balls.push(new Ball(createVector(700, 500), createVector(-80, 0), 20, "green"));
   // balls.push(new Ball(createVector(500, 300), createVector(0, 80), 20, "green"));
   // balls.push(new Ball(createVector(500, 700), createVector(0, -80), 20, "orange"));
   // balls.push(new Ball(createVector(50, 50), createVector(-50, -50), 40, "black"));
+  // balls.push(new Ball(createVector(1000, 400), createVector(50, 50), 50, "black"));
+  // balls.push(new Ball(createVector(1100, 700), createVector(40, -50), 50, "white"));
 
   function r(min, max) {
     return Math.random() * (max - min) + min;
   }
 
-  for (let i = 0; i < 100; i++) {
-    balls.push(new Ball(createVector(r(100, 2300), r(100, 1500)), createVector(r(-200, 200), r(-200, 200)), r(10, 30), r(0, 255)));
+  // for (let i = 0; i < 100; i++) {
+  //   balls.push(new Ball(createVector(r(100, 2300), r(100, 1500)), createVector(r(-200, 200), r(-200, 200)), r(10, 30), r(0, 255)));
+  // }
+  // balls.push(new Ball(createVector(r(100, 2300), r(100, 1500)), createVector(-2000, 2000), 200, r(0, 255)));
+
+  const MAX_RADIUS = 60;
+  for (let y = 0; y < (HEIGHT / MAX_RADIUS / 2) - 1; y++) {
+    for (let x = 0; x < (WIDTH / MAX_RADIUS / 2) - 1; x++) {
+      balls.push(new Ball(createVector(x * MAX_RADIUS*2 + MAX_RADIUS, y * MAX_RADIUS*2 + MAX_RADIUS), createVector(r(-30, 30), r(-30, 30)), r(1, MAX_RADIUS), r(0, 255)));
+    }
   }
-  balls.push(new Ball(createVector(r(100, 2300), r(100, 1500)), createVector(-2000, 2000), 200, r(0, 255)));
 }
 
 let previousSeconds = 0;
 function draw() {
   const seconds = millis() / 1000.0;
-  const dt = seconds - previousSeconds;
+  const dt = Math.min(seconds - previousSeconds, 1);
   // const dt = 0.016;
   previousSeconds = seconds;
   simulate(dt * slider.value());
@@ -173,7 +184,7 @@ function simulate(dt) {
       if (c.t === null) continue;
       if (c.t > dt) continue;
       if (c.t >= collisionTime) continue;
-      if (!c.a.zeroTBoundaryCollisionCheck(c.n)) continue;
+      if (!c.a.boundaryCollisionCheck(c.n)) continue;
 
       collision = c;
       collisionTime = c.t;
@@ -192,8 +203,8 @@ function simulate(dt) {
       //If the collision happens  or at the other collision ignore it
       if (t >= collisionTime) continue;
 
-      //If not zeroTCollisionCheck continue
-      if (!a.zeroTCollisionCheck(b)) continue;
+      //If not collisionCheck continue
+      if (!a.collisionCheck(b, t)) continue;
 
       //Set the collision
       collision = { a, b, n: "BALL" };
